@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 // Ajout de l'import pour la page mecanicien
 import 'mecanicien.dart';
+import 'cmecano.dart' as cmecano;
+import 'chat.dart';
 
 class ClientPage extends StatelessWidget {
   const ClientPage({super.key});
@@ -85,7 +87,12 @@ class ClientPage extends StatelessWidget {
                   icon: Icons.build,
                   label: 'Chercher\nmécanicien',
                   onTap: () {
-                    // action ici
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => cmecano.HomePage(),
+                      ),
+                    );
                   },
                 ),
                 // Dépannage
@@ -96,7 +103,7 @@ class ClientPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => HomePage(),
+                        builder: (context) => cmecano.HomePage(),
                       ),
                     );
                   },
@@ -109,9 +116,9 @@ class ClientPage extends StatelessWidget {
             Center(
               child: GestureDetector(
                 onTap: () {
-                  // Action du bouton robot ici
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Robot activé !')),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ChatPage()),
                   );
                 },
                 child: Container(
@@ -131,11 +138,7 @@ class ClientPage extends StatelessWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(
-                        Icons.android,
-                        color: Colors.white,
-                        size: 50,
-                      ),
+                      Icon(Icons.android, color: Colors.white, size: 50),
                       SizedBox(height: 10),
                       Text(
                         'Robot',
@@ -245,4 +248,3 @@ class ServiceButton extends StatelessWidget {
     );
   }
 }
-

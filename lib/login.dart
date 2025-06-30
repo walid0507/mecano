@@ -17,7 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -26,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(height: 60),
-                
+
                 // Logo et titre
                 Center(
                   child: Column(
@@ -36,14 +36,14 @@ class _LoginPageState extends State<LoginPage> {
                         height: 80,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [Colors.blue[600]!, Colors.cyan],
+                            colors: [Color(0xFFFFAB40), Color(0xFFFFD180)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.blue.withOpacity(0.2),
+                              color: Color(0xFFFFAB40).withOpacity(0.2),
                               blurRadius: 12,
                               offset: Offset(0, 6),
                             ),
@@ -63,19 +63,17 @@ class _LoginPageState extends State<LoginPage> {
                         children: [
                           Icon(
                             Icons.directions_car_filled_rounded,
-                            color: Colors.blue[600],
+                            color: Color(0xFFFFAB40),
                             size: 24,
                           ),
-                          
                         ],
                       ),
-                      
                     ],
                   ),
                 ),
-                
+
                 SizedBox(height: 80),
-                
+
                 // Titre Login
                 Text(
                   'Login',
@@ -85,21 +83,21 @@ class _LoginPageState extends State<LoginPage> {
                     color: Colors.black87,
                   ),
                 ),
-                
+
                 SizedBox(height: 30),
-                
+
                 // Champ Email
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: Colors.orange[100]!),
                   ),
                   child: TextField(
                     controller: _emailController,
                     decoration: InputDecoration(
                       hintText: 'Email',
-                      hintStyle: TextStyle(color: Colors.grey[500]),
+                      hintStyle: TextStyle(color: Colors.orange[300]),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 16,
@@ -108,22 +106,22 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Champ Password
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: Colors.orange[100]!),
                   ),
                   child: TextField(
                     controller: _passwordController,
                     obscureText: _obscurePassword,
                     decoration: InputDecoration(
                       hintText: 'Password',
-                      hintStyle: TextStyle(color: Colors.grey[500]),
+                      hintStyle: TextStyle(color: Colors.orange[300]),
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(
                         horizontal: 16,
@@ -131,8 +129,10 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
-                          _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                          color: Colors.grey[600],
+                          _obscurePassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                          color: Colors.orange,
                         ),
                         onPressed: () {
                           setState(() {
@@ -143,9 +143,9 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-                
+
                 SizedBox(height: 16),
-                
+
                 // Lien Forgot Password
                 Align(
                   alignment: Alignment.centerRight,
@@ -162,16 +162,16 @@ class _LoginPageState extends State<LoginPage> {
                     child: Text(
                       'Forgot Password',
                       style: TextStyle(
-                        color: Colors.blue[600],
+                        color: Color(0xFFFFAB40),
                         fontSize: 14,
                         decoration: TextDecoration.underline,
                       ),
                     ),
                   ),
                 ),
-                
+
                 SizedBox(height: 24),
-                
+
                 // Bouton Login
                 ElevatedButton(
                   onPressed: () {
@@ -181,13 +181,11 @@ class _LoginPageState extends State<LoginPage> {
                     // Navigation vers la page client (ClientPage)
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => ClientPage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => ClientPage()),
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.cyan,
+                    backgroundColor: Color(0xFFFFAB40),
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -197,22 +195,15 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                   child: Text(
                     'Login',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
-                
+
                 SizedBox(height: 24),
-                
+
                 // Login by Mobile
-               
-                
+
                 // Join Us
-            
-                
-               
               ],
             ),
           ),

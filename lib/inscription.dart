@@ -36,7 +36,7 @@ class _InscriptionPageState extends State<InscriptionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xFFFFAB40),
         title: const Text('Inscription', style: TextStyle(color: Colors.white)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -235,9 +235,13 @@ class _InscriptionPageState extends State<InscriptionPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          'Inscription en cours... (${_typeUtilisateur == 'client' ? 'Client' : _typeUtilisateur == 'mecanicien' ? 'Mécanicien' : 'Dépanneur'})',
+                          'Inscription en cours... (${_typeUtilisateur == 'client'
+                              ? 'Client'
+                              : _typeUtilisateur == 'mecanicien'
+                              ? 'Mécanicien'
+                              : 'Dépanneur'})',
                         ),
-                        backgroundColor: Colors.blue,
+                        backgroundColor: const Color(0xFFFFAB40),
                       ),
                     );
                     // Navigation vers la page de succès
@@ -250,7 +254,7 @@ class _InscriptionPageState extends State<InscriptionPage> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: const Color(0xFFFFAB40),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 // Ajout de l'import pour la page de changement de mot de passe
 import 'nvmp.dart';
+// Import de clientp.dart à la place de mecanicien.dart
+import 'clientp.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -176,6 +178,13 @@ class _LoginPageState extends State<LoginPage> {
                     // Action de connexion
                     print('Email: ${_emailController.text}');
                     print('Password: ${_passwordController.text}');
+                    // Navigation vers la page client (ClientPage)
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ClientPage(),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.cyan,

@@ -30,11 +30,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  google_maps_flutter: ^2.5.0
   cupertino_icons: ^1.0.8
-
+  flutter_map: ^6.0.0
+  latlong2: ^0.9.0
+  geolocator: ^10.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -84,6 +84,9 @@ flutter:
   #       - asset: fonts/TrajanPro.ttf
   #       - asset: fonts/TrajanPro_Bold.ttf
   #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package

@@ -14,12 +14,12 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200],
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -31,32 +31,27 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(height: 40),
-                
                 // Titre principal
                 Text(
                   'Changer votre mot de passe',
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: Colors.black,
                   ),
                 ),
-                
                 SizedBox(height: 80),
-                
                 // Label nouveau mot de passe
                 Text(
                   'NOUVEAU MOT DE PASSE',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
+                    color: Colors.black54,
                     letterSpacing: 0.5,
                   ),
                 ),
-                
                 SizedBox(height: 12),
-                
                 // Champ nouveau mot de passe
                 Container(
                   decoration: BoxDecoration(
@@ -67,6 +62,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                   child: TextField(
                     controller: _newPasswordController,
                     obscureText: _obscureNewPassword,
+                    style: TextStyle(color: Colors.black),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(
@@ -76,7 +72,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscureNewPassword ? Icons.visibility_off : Icons.visibility,
-                          color: Colors.grey[600],
+                          color: Colors.black54,
                         ),
                         onPressed: () {
                           setState(() {
@@ -85,38 +81,31 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         },
                       ),
                     ),
-                    style: TextStyle(
-                      fontSize: 16,
-                      letterSpacing: 2,
-                    ),
                   ),
                 ),
-                
                 SizedBox(height: 32),
-                
                 // Label confirmation mot de passe
                 Text(
                   'CONFIRMATION DU NOUVEAU MOT DE PASSE',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
+                    color: Colors.black54,
                     letterSpacing: 0.5,
                   ),
                 ),
-                
                 SizedBox(height: 12),
-                
                 // Champ confirmation mot de passe
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.black87, width: 2),
+                    border: Border.all(color: Colors.black, width: 2),
                   ),
                   child: TextField(
                     controller: _confirmPasswordController,
                     obscureText: _obscureConfirmPassword,
+                    style: TextStyle(color: Colors.black),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       contentPadding: EdgeInsets.symmetric(
@@ -126,7 +115,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-                          color: Colors.grey[600],
+                          color: Colors.black54,
                         ),
                         onPressed: () {
                           setState(() {
@@ -135,15 +124,9 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         },
                       ),
                     ),
-                    style: TextStyle(
-                      fontSize: 16,
-                      letterSpacing: 2,
-                    ),
                   ),
                 ),
-                
                 SizedBox(height: 60),
-                
                 // Bouton Valider
                 Center(
                   child: SizedBox(
@@ -153,7 +136,7 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                         _validatePasswordChange();
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
+                        backgroundColor: Color.fromARGB(255, 255, 152, 0),
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -172,7 +155,6 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                     ),
                   ),
                 ),
-                
                 SizedBox(height: 40),
               ],
             ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
 import 'welcome.dart';
+import 'PageMecano.dart'; // Import de la nouvelle page PageMecano
 
 void main() {
   runApp(const MyApp());

@@ -14,35 +14,70 @@ class ClientPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            // Nouveau header orange avec flèche retour
+            // Header moderne
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
               decoration: const BoxDecoration(
-                color: Color(0xFFFFAB40),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFFF9800),
+                    Color(0xFFFFAB40),
+                    Color(0xFFFFC470),
+                  ],
                 ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.orangeAccent,
+                    blurRadius: 18,
+                    offset: Offset(0, 8),
+                  ),
+                ],
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Flèche retour
-                  IconButton(
-                    icon: const Icon(
-                      Icons.arrow_back,
+                  // Flèche retour stylisée
+                  Container(
+                    decoration: BoxDecoration(
                       color: Colors.white,
-                      size: 28,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.orange.withOpacity(0.15),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
-                    onPressed: () {
-                      Navigator.of(context).maybePop();
-                    },
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Color(0xFFFF9800),
+                        size: 26,
+                      ),
+                      onPressed: () {
+                        Navigator.of(context).maybePop();
+                      },
+                    ),
                   ),
-                  const SizedBox(width: 8),
-                  // Localisation et salutation
-                  Icon(Icons.location_on, color: Colors.white, size: 28),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 14),
+                  // Localisation stylisée
+                  Container(
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(6),
+                    child: const Icon(
+                      Icons.location_on,
+                      color: Color(0xFFFF9800),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
@@ -50,13 +85,20 @@ class ClientPage extends StatelessWidget {
                         'Salut, Abderrahmane',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
                         ),
                       ),
                       Text(
                         'Alger, Algérie',
-                        style: TextStyle(color: Colors.white70),
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
                       ),
                     ],
                   ),
@@ -64,28 +106,41 @@ class ClientPage extends StatelessWidget {
               ),
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 38),
 
-            // Title
+            // Title modernisé
             const Text(
               'Quel service cherchez-vous ?',
               style: TextStyle(
-                color: Colors.orange,
-                fontSize: 20,
+                color: Color(0xFFFF9800),
+                fontSize: 26,
                 fontWeight: FontWeight.bold,
+                letterSpacing: 0.5,
+                shadows: [
+                  Shadow(
+                    color: Colors.black12,
+                    blurRadius: 6,
+                    offset: Offset(0, 2),
+                  ),
+                ],
               ),
+              textAlign: TextAlign.center,
             ),
 
-            const SizedBox(height: 40),
+            const SizedBox(height: 36),
 
-            // Two centered buttons
+            // Deux boutons centrés modernisés
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                // Mécanicien
                 ServiceButton(
                   icon: Icons.build,
                   label: 'Chercher\nmécanicien',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFAB40), Color(0xFFFF9800)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -95,10 +150,14 @@ class ClientPage extends StatelessWidget {
                     );
                   },
                 ),
-                // Dépannage
                 ServiceButton(
                   icon: Icons.car_crash,
                   label: 'Chercher\ndépannage',
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFFAB40), Color(0xFFFF9800)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -111,7 +170,7 @@ class ClientPage extends StatelessWidget {
               ],
             ),
 
-            // Ajout du bouton robot centré sous les deux boutons
+            // Bouton robot modernisé
             const SizedBox(height: 32),
             Center(
               child: GestureDetector(
@@ -121,31 +180,38 @@ class ClientPage extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => const ChatPage()),
                   );
                 },
-                child: Container(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 400),
+                  curve: Curves.easeOutBack,
                   width: 140,
                   height: 140,
                   decoration: BoxDecoration(
-                    color: Colors.orangeAccent,
-                    borderRadius: BorderRadius.circular(20),
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFFFFAB40), Color(0xFFFF9800)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.orange.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: Offset(0, 2),
+                        color: Colors.orange.withOpacity(0.25),
+                        blurRadius: 18,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: const [
-                      Icon(Icons.android, color: Colors.white, size: 50),
-                      SizedBox(height: 10),
+                      Icon(Icons.android, color: Colors.white, size: 56),
+                      SizedBox(height: 12),
                       Text(
                         'Robot',
                         style: TextStyle(
-                          color: Colors.black,
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: 18,
+                          letterSpacing: 0.5,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -155,21 +221,24 @@ class ClientPage extends StatelessWidget {
               ),
             ),
 
-            // Spacer pour pousser les boutons du bas vers le bas
             const Spacer(),
 
-            // Barre de boutons en bas
+            // Barre de boutons en bas modernisée
             Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.orange.withOpacity(0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
+                    color: Colors.orange.withOpacity(0.18),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
                   ),
                 ],
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(24),
+                  topRight: Radius.circular(24),
+                ),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -190,13 +259,27 @@ class ClientPage extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, color: Colors.orange, size: 24),
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFFF3E0),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.orange.withOpacity(0.08),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(8),
+          child: Icon(icon, color: const Color(0xFFFF9800), size: 26),
+        ),
         const SizedBox(height: 4),
         Text(
           label,
           style: const TextStyle(
-            color: Colors.orange,
-            fontSize: 12,
+            color: Color(0xFFFF9800),
+            fontSize: 13,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -209,36 +292,48 @@ class ServiceButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Gradient gradient;
 
   const ServiceButton({
     super.key,
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.gradient,
   });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
         width: 140,
         height: 140,
         decoration: BoxDecoration(
-          color: Colors.orangeAccent,
-          borderRadius: BorderRadius.circular(20),
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.orange.withOpacity(0.18),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 50, color: Colors.black),
-            const SizedBox(height: 10),
+            Icon(icon, size: 56, color: Colors.white),
+            const SizedBox(height: 12),
             Text(
               label,
               style: const TextStyle(
-                color: Colors.black,
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 16,
+                fontSize: 18,
+                letterSpacing: 0.5,
               ),
               textAlign: TextAlign.center,
             ),

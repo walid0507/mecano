@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'login.dart';
+import 'welcome.dart';
 
 void main() {
   runApp(const MyApp());
@@ -30,7 +32,8 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      // Utiliser WelcomePage comme page d'accueil
+      home: WelcomePage(),
     );
   }
 }

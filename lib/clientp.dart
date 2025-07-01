@@ -6,6 +6,8 @@ import 'chat.dart';
 import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class ClientPage extends StatefulWidget {
   const ClientPage({super.key});
@@ -16,14 +18,22 @@ class ClientPage extends StatefulWidget {
 
 class _ClientPageState extends State<ClientPage> {
   final dio = Dio();
-  final cookieJar = CookieJar();
+  CookieJar? cookieJar;
   String? nomClient;
 
   @override
   void initState() {
     super.initState();
-    dio.interceptors.add(CookieManager(cookieJar));
+    _initCookieJar();
     fetchNomClient();
+  }
+
+  Future<void> _initCookieJar() async {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      cookieJar = CookieJar();
+      dio.interceptors.add(CookieManager(cookieJar!));
+    }
+    // Sur le web, NE PAS ajouter CookieManager !
   }
 
   Future<void> fetchNomClient() async {

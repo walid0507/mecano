@@ -59,6 +59,7 @@ class _CMecanoState extends State<CMecano> {
   IO.Socket? socket;
   int? userId; // L'id du client connecté
   bool demandeAcceptee = false;
+  Map<String, dynamic>? mecanicienInfos;
 
   @override
   void initState() {
@@ -107,9 +108,10 @@ class _CMecanoState extends State<CMecano> {
 
     socket!.on('demande_acceptee', (data) {
       print('Demande acceptée reçue : $data');
-      if (!mounted) return; // <-- Ajoute cette ligne !
+      if (!mounted) return;
       setState(() {
         demandeAcceptee = true;
+        mecanicienInfos = data['mecanicien'];
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(data['message'] ?? 'Votre demande a été acceptée !')),
@@ -395,14 +397,25 @@ class _CMecanoState extends State<CMecano> {
                   const SizedBox(height: 12),
                   Center(
                     child: demandeAcceptee
-                        ? const Text(
-                            'Demande acceptée',
-                            style: TextStyle(
-                              color: Colors.green,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          )
+                        ? mecanicienInfos != null
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    'Demande acceptée',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text('Mécanicien : ${mecanicienInfos!['nom']} ${mecanicienInfos!['prenom']}'),
+                                  Text('Téléphone : ${mecanicienInfos!['telephone']}'),
+                                  Text('Position : ${mecanicienInfos!['position_lat']}, ${mecanicienInfos!['position_lng']}'),
+                                ],
+                              )
+                            : const Text('Demande acceptée')
                         : ElevatedButton(
                             onPressed: envoyerDemande,
                             style: ElevatedButton.styleFrom(

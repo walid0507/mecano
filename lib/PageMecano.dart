@@ -102,62 +102,102 @@ class _PageMecanoState extends State<PageMecano> {
     }
   }
 
-  void _showActionSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 24),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Accepter',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
+  void _showClientInfo(
+    int clientId,
+    double lat,
+    double lng,
+    int demandeId,
+  ) async {
+    try {
+      final response = await dio.get(
+        'http://localhost:3000/users/$clientId',
+        options: Options(
+          extra: {'withCredentials': true},
+        ),
+      );
+      if (response.statusCode == 200) {
+        final client = response.data;
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Infos du client'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nom : ${client['nom']}'),
+                Text('Prénom : ${client['prenom']}'),
+                Text('Téléphone : ${client['telephone']}'),
+                Text('Position : ($lat, $lng)'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Fermer'),
               ),
-              OutlinedButton(
-                onPressed: () {},
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.orange, width: 2),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Refuser',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.orange,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _accepterDemande(demandeId);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                child: const Text('Accepter la demande'),
               ),
             ],
           ),
         );
-      },
-    );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de récupérer les infos du client'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+    }
+  }
+
+  Future<void> _accepterDemande(int demandeId) async {
+    try {
+      // Récupérer l'id du dépanneur connecté
+      final meResponse = await dio.get(
+        'http://localhost:3000/users/me',
+        options: Options(
+          extra: {'withCredentials': true},
+        ),
+      );
+      final depanneurId = meResponse.data['id'];
+      final response = await dio.post(
+        'http://localhost:3000/demandes/$demandeId/accepter',
+        data: {'prestataire_id': depanneurId},
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          extra: {'withCredentials': true},
+        ),
+      );
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Demande acceptée !')));
+        fetchDemandes(); // Rafraîchir la liste
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              response.data['error'] ?? 'Erreur lors de l\'acceptation',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+    }
   }
 
   @override
@@ -170,7 +210,7 @@ class _PageMecanoState extends State<PageMecano> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header
+            // Header amélioré
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -224,7 +264,7 @@ class _PageMecanoState extends State<PageMecano> {
                 ),
               ),
             ),
-            // Carte OpenStreetMap
+            // Carte OpenStreetMap avec 4 coins arrondis et centrée
             Center(
               child: Container(
                 margin: const EdgeInsets.only(bottom: 0),
@@ -293,7 +333,12 @@ class _PageMecanoState extends State<PageMecano> {
                             style: const TextStyle(color: Colors.orange),
                           ),
                           onTap: () {
-                            _showActionSheet(context);
+                            _showClientInfo(
+                              demande['client_id'],
+                              demande['position_lat'],
+                              demande['position_lng'],
+                              demande['id'],
+                            );
                           },
                         );
                       },

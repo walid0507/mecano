@@ -53,7 +53,11 @@ class _PageDepannageState extends State<PageDepannage> {
       if (response.statusCode == 200) {
         setState(() {
           demandes = (response.data as List)
-              .where((d) => d['statut'] == 'en_attente')
+              .where(
+                (d) =>
+                    d['statut'] == 'en_attente' &&
+                    d['type_demande'] == 'depanneur',
+              )
               .toList();
         });
       } else {
@@ -158,6 +162,91 @@ class _PageDepannageState extends State<PageDepannage> {
         );
       },
     );
+  }
+
+  void _showClientInfo(
+    int clientId,
+    double lat,
+    double lng,
+    int demandeId,
+  ) async {
+    try {
+      final response = await dio.get('http://localhost:3000/users/$clientId');
+      if (response.statusCode == 200) {
+        final client = response.data;
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Infos du client'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Nom : ${client['nom']}'),
+                Text('Prénom : ${client['prenom']}'),
+                Text('Téléphone : ${client['telephone']}'),
+                Text('Position : ($lat, $lng)'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Fermer'),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _accepterDemande(demandeId);
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                child: const Text('Accepter la demande'),
+              ),
+            ],
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Impossible de récupérer les infos du client'),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+    }
+  }
+
+  Future<void> _accepterDemande(int demandeId) async {
+    try {
+      // Récupérer l'id du dépanneur connecté
+      final meResponse = await dio.get('http://localhost:3000/users/me');
+      final depanneurId = meResponse.data['id'];
+      final response = await dio.post(
+        'http://localhost:3000/demandes/$demandeId/accepter',
+        data: {'prestataire_id': depanneurId},
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Demande acceptée !')));
+        fetchDemandes(); // Rafraîchir la liste
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              response.data['error'] ?? 'Erreur lors de l\'acceptation',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+    }
   }
 
   @override
@@ -293,7 +382,12 @@ class _PageDepannageState extends State<PageDepannage> {
                             style: const TextStyle(color: Colors.orange),
                           ),
                           onTap: () {
-                            // Action future : accepter/refuser
+                            _showClientInfo(
+                              demande['client_id'],
+                              demande['position_lat'],
+                              demande['position_lng'],
+                              demande['id'],
+                            );
                           },
                         );
                       },

@@ -8,6 +8,7 @@ import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 // Modèle pour un dépanneur
 class Depanneur {
@@ -135,10 +136,17 @@ class _HomePageState extends State<HomePage> {
   final dio = Dio();
   PersistCookieJar? cookieJar;
 
+  IO.Socket? socket;
+  int? userId;
+  bool demandeAcceptee = false;
+  Map<String, dynamic>? clientInfos;
+  Map<String, dynamic>? depanneurInfos;
+
   @override
   void initState() {
     super.initState();
     _initCookieJar();
+    _initSocket();
   }
 
   Future<void> _initCookieJar() async {
@@ -189,6 +197,45 @@ class _HomePageState extends State<HomePage> {
         context,
       ).showSnackBar(SnackBar(content: Text('Erreur : $e')));
     }
+  }
+
+  void _initSocket() async {
+    final meResponse = await dio.get(
+      'http://localhost:3000/users/me',
+      options: Options(extra: {'withCredentials': true}),
+    );
+    userId = meResponse.data['id'];
+    print('Mon userId : $userId');
+
+    socket = IO.io(
+      'http://localhost:3000',
+      IO.OptionBuilder()
+        .setTransports(['websocket'])
+        .enableAutoConnect()
+        .build(),
+    );
+
+    socket!.onConnect((_) {
+      print('Connecté au serveur Socket.io');
+      if (userId != null) {
+        socket!.emit('subscribe', userId);
+        print('Subscribed to user_$userId');
+      }
+    });
+
+    socket!.on('demande_acceptee', (data) {
+      print('Demande acceptée reçue : $data');
+      if (!mounted) return;
+      setState(() {
+        demandeAcceptee = true;
+        depanneurInfos = data['mecanicien']; // ou data['depanneur'] selon ton backend
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(data['message'] ?? 'Votre demande a été acceptée !')),
+      );
+    });
+
+    socket!.onDisconnect((_) => print('Déconnecté de Socket.io'));
   }
 
   // Génère les marqueurs pour les dépanneurs (flutter_map)
@@ -342,25 +389,45 @@ class _HomePageState extends State<HomePage> {
                   const SizedBox(height: 12),
                   // Remplacement de la liste par un bouton
                   Center(
-                    child: ElevatedButton(
-                      onPressed: envoyerDemande,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 255, 152, 0),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 18,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      child: const Text('Réserver maintenant'),
-                    ),
+                    child: demandeAcceptee
+                        ? depanneurInfos != null
+                            ? Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  const Text(
+                                    'Demande acceptée',
+                                    style: TextStyle(
+                                      color: Colors.green,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text('Dépanneur : ${depanneurInfos!['nom']} ${depanneurInfos!['prenom']}'),
+                                  Text('Téléphone : ${depanneurInfos!['telephone']}'),
+                                  Text('Position : ${depanneurInfos!['position_lat']}, ${depanneurInfos!['position_lng']}'),
+                                ],
+                              )
+                            : const Text('Demande acceptée')
+                        : ElevatedButton(
+                            onPressed: envoyerDemande,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(255, 255, 152, 0),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 40,
+                                vertical: 18,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            child: const Text('Réserver maintenant'),
+                          ),
                   ),
                 ],
               ),

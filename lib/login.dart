@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-// Ajout de l'import pour la page de changement de mot de passe
 import 'nvmp.dart';
-// Import de clientp.dart à la place de mecanicien.dart
 import 'clientp.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:path_provider/path_provider.dart';
 import 'PageMecano.dart';
 import 'PageDepannage.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class LoginPage extends StatefulWidget {
   @override
@@ -23,12 +22,21 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   final dio = Dio();
-  final cookieJar = CookieJar();
+  PersistCookieJar? cookieJar;
 
   @override
   void initState() {
     super.initState();
-    dio.interceptors.add(CookieManager(cookieJar));
+    _initCookieJar();
+  }
+
+  Future<void> _initCookieJar() async {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      final appDocDir = await getApplicationDocumentsDirectory();
+      cookieJar = PersistCookieJar(storage: FileStorage(appDocDir.path));
+      dio.interceptors.add(CookieManager(cookieJar!));
+    }
+    // Sur le web, Dio gère les cookies en mémoire automatiquement
   }
 
   Future<void> _login() async {
@@ -53,12 +61,24 @@ class _LoginPageState extends State<LoginPage> {
         options: Options(
           headers: {'Content-Type': 'application/json'},
           validateStatus: (_) => true,
+          extra: {'withCredentials': true}, // Important pour le web
         ),
       );
 
+      // Debug : affiche le code et la réponse
+      print('LOGIN status: ${response.statusCode}');
+      print('LOGIN data: ${response.data}');
+
       if (response.statusCode == 200) {
         // Récupérer les infos du user via /users/me
-        final meResponse = await dio.get('http://localhost:3000/users/me');
+        final meResponse = await dio.get(
+          'http://localhost:3000/users/me',
+          options: Options(
+            extra: {'withCredentials': true}, // Important pour le web
+          ),
+        );
+        print('ME status: ${meResponse.statusCode}');
+        print('ME data: ${meResponse.data}');
         final user = meResponse.data;
         final role = user['role'];
 
@@ -85,7 +105,11 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response.data['message'] ?? 'Erreur de connexion'),
+            content: Text(
+              response.data is Map && response.data['message'] != null
+                  ? response.data['message']
+                  : 'Erreur de connexion (${response.statusCode})',
+            ),
           ),
         );
       }

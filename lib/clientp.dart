@@ -3,9 +3,44 @@ import 'package:flutter/material.dart';
 import 'mecanicien.dart';
 import 'cmecano.dart' as cmecano;
 import 'chat.dart';
+import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
-class ClientPage extends StatelessWidget {
+class ClientPage extends StatefulWidget {
   const ClientPage({super.key});
+
+  @override
+  State<ClientPage> createState() => _ClientPageState();
+}
+
+class _ClientPageState extends State<ClientPage> {
+  final dio = Dio();
+  final cookieJar = CookieJar();
+  String? nomClient;
+
+  @override
+  void initState() {
+    super.initState();
+    dio.interceptors.add(CookieManager(cookieJar));
+    fetchNomClient();
+  }
+
+  Future<void> fetchNomClient() async {
+    try {
+      final response = await dio.get(
+        'http://localhost:3000/users/me',
+        options: Options(extra: {'withCredentials': true}),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          nomClient = response.data['nom'];
+        });
+      }
+    } catch (e) {
+      // ignore erreur
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -161,9 +196,7 @@ class ClientPage extends StatelessWidget {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => HomePage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => HomePage()),
                     );
                   },
                 ),

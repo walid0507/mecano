@@ -36,7 +36,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       // Utiliser WelcomePage comme page d'accueil
-      home: HomePage(),
+      home: WelcomePage(),
     );
   }
 }

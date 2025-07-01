@@ -193,11 +193,12 @@ class _PageDepannageState extends State<PageDepannage> {
                 Text('Position : ($lat, $lng)'),
               ],
             ),
-            actions: [
+            actions: [  
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Fermer'),
-              ),
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Fermer'),
+                  ),
+              
               ElevatedButton(
                 onPressed: () async {
                   Navigator.of(context).pop();
@@ -272,10 +273,7 @@ class _PageDepannageState extends State<PageDepannage> {
                   ],
                 ),
                 actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Fermer'),
-                  ),
+                  
                   ElevatedButton(
                     onPressed: () async {
                       await _terminerPrestation(prestation['id']);

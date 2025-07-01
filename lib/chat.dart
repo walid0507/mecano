@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 
 class ChatPage extends StatefulWidget {
   const ChatPage({super.key});
@@ -8,22 +9,80 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final List<Map<String, String>> _messages = [
-    {'sender': 'robot', 'text': 'Bonjour, comment puis-je vous aider ?'},
-  ];
   final TextEditingController _controller = TextEditingController();
+  final Dio dio = Dio();
+  int? userId;
+  bool _loading = true;
+  final List<Map<String, String>> _messages = [];
 
-  void _sendMessage() {
+  @override
+  void initState() {
+    super.initState();
+    _loadUserAndHistory();
+  }
+
+  Future<void> _loadUserAndHistory() async {
+    try {
+      // Récupère l'utilisateur connecté
+      final meResp = await dio.get(
+        'http://localhost:3000/users/me',
+        options: Options(
+          extra: {'withCredentials': true},
+        ),
+      );
+      userId = meResp.data['id'];
+      // Récupère l'historique du chat
+      final histResp = await dio.get(
+        'http://localhost:3000/chatbot/$userId/history',
+        options: Options(
+          extra: {'withCredentials': true},
+        ),
+      );
+      final history = histResp.data['history'] as List;
+      setState(() {
+        _messages.clear();
+        for (final h in history) {
+          _messages.add({'sender': 'user', 'text': h['input_text'] ?? ''});
+          _messages.add({'sender': 'robot', 'text': h['response_text'] ?? ''});
+        }
+        _loading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add({
+          'sender': 'robot',
+          'text': "Erreur lors du chargement de l'historique : $e"
+        });
+        _loading = false;
+      });
+    }
+  }
+
+  Future<void> _sendMessage() async {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || userId == null) return;
     setState(() {
       _messages.add({'sender': 'user', 'text': text});
-      _messages.add({
-        'sender': 'robot',
-        'text': 'Je suis un robot, je réponds à : "$text"',
-      });
+      _controller.clear();
     });
-    _controller.clear();
+    try {
+      final resp = await dio.post(
+        'http://localhost:3000/chatbot',
+        data: {'message': text, 'userId': userId.toString()},
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          extra: {'withCredentials': true},
+        ),
+      );
+      final botReply = resp.data['response'] ?? 'Le robot n\'a pas répondu.';
+      setState(() {
+        _messages.add({'sender': 'robot', 'text': botReply});
+      });
+    } catch (e) {
+      setState(() {
+        _messages.add({'sender': 'robot', 'text': 'Erreur lors de l\'envoi : $e'});
+      });
+    }
   }
 
   @override
@@ -40,39 +99,41 @@ class _ChatPageState extends State<ChatPage> {
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final msg = _messages[index];
-                final isUser = msg['sender'] == 'user';
-                return Align(
-                  alignment: isUser
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: isUser
-                          ? const Color(0xFFFFAB40)
-                          : Colors.grey[200],
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      msg['text'] ?? '',
-                      style: TextStyle(
-                        color: isUser ? Colors.white : Colors.black87,
-                        fontSize: 16,
-                      ),
-                    ),
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      final msg = _messages[index];
+                      final isUser = msg['sender'] == 'user';
+                      return Align(
+                        alignment: isUser
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isUser
+                                ? const Color(0xFFFFAB40)
+                                : Colors.grey[200],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Text(
+                            msg['text'] ?? '',
+                            style: TextStyle(
+                              color: isUser ? Colors.white : Colors.black87,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
           Container(
             color: Colors.white,
@@ -95,7 +156,7 @@ class _ChatPageState extends State<ChatPage> {
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
-                  onPressed: _sendMessage,
+                  onPressed: _loading ? null : _sendMessage,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFFFAB40),
                     foregroundColor: Colors.white,

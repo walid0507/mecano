@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 
 class PageDepannage extends StatefulWidget {
   const PageDepannage({super.key});
@@ -14,10 +17,46 @@ class _PageDepannageState extends State<PageDepannage> {
   LatLng? _userPosition;
   bool _loading = true;
 
+  final dio = Dio();
+  final cookieJar = CookieJar();
+  List<dynamic> demandes = [];
+  bool _isFetching = false;
+
   @override
   void initState() {
     super.initState();
+    dio.interceptors.add(CookieManager(cookieJar));
+    fetchDemandes();
     _determinePosition();
+  }
+
+  Future<void> fetchDemandes() async {
+    setState(() {
+      _isFetching = true;
+    });
+    try {
+      final response = await dio.get('http://localhost:3000/demandes');
+      if (response.statusCode == 200) {
+        // Filtrer les demandes avec statut 'en_attente'
+        setState(() {
+          demandes = (response.data as List)
+              .where((d) => d['statut'] == 'en_attente')
+              .toList();
+        });
+      } else {
+        setState(() {
+          demandes = [];
+        });
+      }
+    } catch (e) {
+      setState(() {
+        demandes = [];
+      });
+    } finally {
+      setState(() {
+        _isFetching = false;
+      });
+    }
   }
 
   Future<void> _determinePosition() async {
@@ -216,44 +255,36 @@ class _PageDepannageState extends State<PageDepannage> {
             ),
             // Liste des courses scrollable sous la map
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildDemande(
-                    context,
-                    avatarUrl: null,
-                    nom: 'Mehdi',
-                    note: 5.0,
-                    nbAvis: 3,
-                    distance: 2.8,
-                    adresse:
-                        'Boulevard Meddad Said (Mahelma)\nMahelma (Zaatria)',
-                    instant: true,
-                  ),
-                  _buildDemande(
-                    context,
-                    avatarUrl: null,
-                    nom: 'rami',
-                    note: 5.0,
-                    nbAvis: 13,
-                    distance: 3.2,
-                    adresse:
-                        'W112 (Mahelma)\nGare المسافرين\nRoutiere du Caroubier, Hussein (Dey)',
-                    instant: true,
-                  ),
-                  _buildDemande(
-                    context,
-                    avatarUrl: null,
-                    nom: 'Adlane',
-                    note: 4.82,
-                    nbAvis: 237,
-                    distance: 3.6,
-                    adresse:
-                        'local n° 20 lot 04 (Rahmania)\nAv. Houari Boumediene (Sidi Abdella)',
-                    instant: true,
-                  ),
-                ],
-              ),
+              child: _isFetching
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.orange),
+                    )
+                  : demandes.isEmpty
+                  ? const Center(child: Text('Aucune demande en attente'))
+                  : ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: demandes.length,
+                      itemBuilder: (context, index) {
+                        final demande = demandes[index];
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.assignment,
+                            color: Colors.orange,
+                          ),
+                          title: Text('Demande #${demande['id']}'),
+                          subtitle: Text(
+                            'Client ID: ${demande['client_id']}\nPosition: (${demande['position_lat']}, ${demande['position_lng']})',
+                          ),
+                          trailing: Text(
+                            demande['statut'],
+                            style: const TextStyle(color: Colors.orange),
+                          ),
+                          onTap: () {
+                            // Action future : accepter/refuser
+                          },
+                        );
+                      },
+                    ),
             ),
 
             // Barre de navigation en bas
@@ -279,6 +310,21 @@ class _PageDepannageState extends State<PageDepannage> {
                     'Portefeuille',
                   ),
                 ],
+              ),
+            ),
+
+            // Ajout d'un bouton de rafraîchissement manuel (optionnel)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Center(
+                child: ElevatedButton.icon(
+                  onPressed: fetchDemandes,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Rafraîchir les demandes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                  ),
+                ),
               ),
             ),
           ],

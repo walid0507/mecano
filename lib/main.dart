@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'login.dart';
 import 'welcome.dart';
-import 'PageMecano.dart'; // Import de la nouvelle page PageMecano
+import 'PageMecano.dart';
+import 'mecanicien.dart';
+// Import de la nouvelle page PageMecano
 
 void main() {
   runApp(const MyApp());
@@ -34,7 +36,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       // Utiliser WelcomePage comme page d'accueil
-      home: WelcomePage(),
+      home: HomePage(),
     );
   }
 }

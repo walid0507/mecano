@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:geolocator/geolocator.dart';
 
 // Modèle pour un dépanneur
 class Depanneur {
@@ -32,11 +36,7 @@ class TypeProbleme {
   final IconData icone;
   final Color couleur;
 
-  TypeProbleme({
-    required this.nom,
-    required this.icone,
-    required this.couleur,
-  });
+  TypeProbleme({required this.nom, required this.icone, required this.couleur});
 }
 
 class HomePage extends StatefulWidget {
@@ -48,7 +48,7 @@ class _HomePageState extends State<HomePage> {
   // Position actuelle simulée (Alger)
   final double _currentLat = 36.7538;
   final double _currentLng = 3.0588;
-  
+
   // Liste des dépanneurs proches (données simulées)
   List<Depanneur> depanneurs = [
     Depanneur(
@@ -95,16 +95,84 @@ class _HomePageState extends State<HomePage> {
 
   // Types de problèmes disponibles (icône corrigée)
   List<TypeProbleme> typesProblemes = [
-    TypeProbleme(nom: "Panne moteur", icone: Icons.settings, couleur: Colors.red),
-    TypeProbleme(nom: "Batterie", icone: Icons.battery_alert, couleur: Colors.orange),
-    TypeProbleme(nom: "Pneu crevé", icone: Icons.circle, couleur: Colors.blue), // Icône corrigée
-    TypeProbleme(nom: "Accident", icone: Icons.car_crash, couleur: Colors.purple),
-    TypeProbleme(nom: "Panne essence", icone: Icons.local_gas_station, couleur: Colors.green),
-    TypeProbleme(nom: "Problème électrique", icone: Icons.electrical_services, couleur: Colors.yellow[700]!),
+    TypeProbleme(
+      nom: "Panne moteur",
+      icone: Icons.settings,
+      couleur: Colors.red,
+    ),
+    TypeProbleme(
+      nom: "Batterie",
+      icone: Icons.battery_alert,
+      couleur: Colors.orange,
+    ),
+    TypeProbleme(
+      nom: "Pneu crevé",
+      icone: Icons.circle,
+      couleur: Colors.blue,
+    ), // Icône corrigée
+    TypeProbleme(
+      nom: "Accident",
+      icone: Icons.car_crash,
+      couleur: Colors.purple,
+    ),
+    TypeProbleme(
+      nom: "Panne essence",
+      icone: Icons.local_gas_station,
+      couleur: Colors.green,
+    ),
+    TypeProbleme(
+      nom: "Problème électrique",
+      icone: Icons.electrical_services,
+      couleur: Colors.yellow[700]!,
+    ),
   ];
 
   // Centre de la carte (Alger)
   final LatLng _center = LatLng(36.7538, 3.0588);
+
+  final dio = Dio();
+  final cookieJar = CookieJar();
+
+  @override
+  void initState() {
+    super.initState();
+    dio.interceptors.add(CookieManager(cookieJar));
+  }
+
+  Future<void> envoyerDemande() async {
+    try {
+      // Récupérer la position GPS du client
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      // Récupérer l'id du client
+      final meResponse = await dio.get('http://localhost:3000/users/me');
+      final clientId = meResponse.data['id'];
+      final response = await dio.post(
+        'http://localhost:3000/demandes',
+        data: {
+          'client_id': clientId,
+          'type_demande': 'depanneur',
+          'position_lat': position.latitude,
+          'position_lng': position.longitude,
+        },
+        options: Options(headers: {'Content-Type': 'application/json'}),
+      );
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Demande envoyée, en cours de traitement…')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'envoi de la demande')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+    }
+  }
 
   // Génère les marqueurs pour les dépanneurs (flutter_map)
   List<Marker> get _depanneurMarkers {
@@ -116,11 +184,10 @@ class _HomePageState extends State<HomePage> {
         child: GestureDetector(
           onTap: () => _showDepanneurDetails(depanneur),
           child: Icon(
-  Icons.car_repair, // Icône de véhicule pour dépanneur
-  color: depanneur.disponible ? Colors.green : Colors.red,
-  size: 36,
-),
-
+            Icons.car_repair, // Icône de véhicule pour dépanneur
+            color: depanneur.disponible ? Colors.green : Colors.red,
+            size: 36,
+          ),
         ),
       );
     }).toList();
@@ -137,7 +204,13 @@ class _HomePageState extends State<HomePage> {
           children: [
             Icon(Icons.directions_car, color: Colors.white),
             SizedBox(width: 8),
-            Text('Ph DEALER', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            Text(
+              'Ph DEALER',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
           ],
         ),
         actions: [
@@ -180,7 +253,11 @@ class _HomePageState extends State<HomePage> {
                         ),
                         Text(
                           'Alger Centre, Algérie',
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w500),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ],
                     ),
@@ -198,10 +275,14 @@ class _HomePageState extends State<HomePage> {
                 children: [
                   const Text(
                     'Dépanneurs proches',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Nouvelle carte Google Maps stylée
                   Container(
                     height: 250,
@@ -219,18 +300,14 @@ class _HomePageState extends State<HomePage> {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(18),
                       child: FlutterMap(
-                        options: MapOptions(
-                          center: _center,
-                          zoom: 13.0,
-                        ),
+                        options: MapOptions(center: _center, zoom: 13.0),
                         children: [
                           TileLayer(
-                            urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+                            urlTemplate:
+                                "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
                             subdomains: ['a', 'b', 'c'],
                           ),
-                          MarkerLayer(
-                            markers: _depanneurMarkers,
-                          ),
+                          MarkerLayer(markers: _depanneurMarkers),
                         ],
                       ),
                     ),
@@ -249,20 +326,21 @@ class _HomePageState extends State<HomePage> {
                   // Remplacement de la liste par un bouton
                   Center(
                     child: ElevatedButton(
-                      onPressed: () {
-                        // Action de réservation à définir
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Réservation effectuée !')),
-                        );
-                      },
+                      onPressed: envoyerDemande,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color.fromARGB(255, 255, 152, 0),
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 18),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 40,
+                          vertical: 18,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        textStyle: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       child: const Text('Réserver maintenant'),
                     ),
@@ -275,7 +353,7 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      
+
       // Enlever le bouton d'assistance rapide
       // floatingActionButton: SizedBox(
       //   width: 160,
@@ -349,7 +427,10 @@ class _HomePageState extends State<HomePage> {
         return AlertDialog(
           title: Text(
             'Assistance Rapide',
-            style: TextStyle(color: Colors.red[600], fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: Colors.red[600],
+              fontWeight: FontWeight.bold,
+            ),
           ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -434,12 +515,19 @@ class _HomePageState extends State<HomePage> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Votre demande d\'assistance a été envoyée avec succès!'),
+              const Text(
+                'Votre demande d\'assistance a été envoyée avec succès!',
+              ),
               const SizedBox(height: 16),
-              const Text('Détails:', style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text(
+                'Détails:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
               Text('• Type: ${typeProbleme.nom}'),
               const Text('• Position: Alger Centre'),
-              Text('• Heure: ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}'),
+              Text(
+                '• Heure: ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+              ),
               const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(12),

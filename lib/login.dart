@@ -5,6 +5,11 @@ import 'nvmp.dart';
 import 'clientp.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'PageMecano.dart';
+import 'PageDepannage.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -16,6 +21,15 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isLoading = false;
+
+  final dio = Dio();
+  final cookieJar = CookieJar();
+
+  @override
+  void initState() {
+    super.initState();
+    dio.interceptors.add(CookieManager(cookieJar));
+  }
 
   Future<void> _login() async {
     final email = _emailController.text.trim();
@@ -31,27 +45,48 @@ class _LoginPageState extends State<LoginPage> {
     setState(() {
       _isLoading = true;
     });
-    final url = Uri.parse(
-      'http://localhost:3000/auth/login',
-    ); // À adapter selon ton IP/port
+
     try {
-      final response = await http.post(
-        url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'email': email, 'mot_de_passe': password}),
+      final response = await dio.post(
+        'http://localhost:3000/auth/login',
+        data: {'email': email, 'mot_de_passe': password},
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          validateStatus: (_) => true,
+        ),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        // Ici tu peux stocker le token si besoin : data['token']
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => ClientPage()),
-        );
+        // Récupérer les infos du user via /users/me
+        final meResponse = await dio.get('http://localhost:3000/users/me');
+        final user = meResponse.data;
+        final role = user['role'];
+
+        if (role == 'client') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => ClientPage()),
+          );
+        } else if (role == 'mecanicien') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => PageMecano()),
+          );
+        } else if (role == 'depanneur') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => PageDepannage()),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Rôle utilisateur inconnu')),
+          );
+        }
       } else {
-        final data = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Erreur de connexion')),
+          SnackBar(
+            content: Text(response.data['message'] ?? 'Erreur de connexion'),
+          ),
         );
       }
     } catch (e) {

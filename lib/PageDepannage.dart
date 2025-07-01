@@ -3,14 +3,14 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 
-class PageMecano extends StatefulWidget {
-  const PageMecano({super.key});
+class PageDepannage extends StatefulWidget {
+  const PageDepannage({super.key});
 
   @override
-  State<PageMecano> createState() => _PageMecanoState();
+  State<PageDepannage> createState() => _PageDepannageState();
 }
 
-class _PageMecanoState extends State<PageMecano> {
+class _PageDepannageState extends State<PageDepannage> {
   LatLng? _userPosition;
   bool _loading = true;
 

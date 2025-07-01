@@ -47,7 +47,7 @@ class _PageDepannageState extends State<PageDepannage> {
       final response = await dio.get(
         'http://localhost:3000/demandes',
         options: Options(
-          extra: {'withCredentials': true}, // <-- Ajoute ceci !
+          extra: {'withCredentials': true}, // <-- Important !
         ),
       );
       if (response.statusCode == 200) {
@@ -171,7 +171,12 @@ class _PageDepannageState extends State<PageDepannage> {
     int demandeId,
   ) async {
     try {
-      final response = await dio.get('http://localhost:3000/users/$clientId');
+      final response = await dio.get(
+        'http://localhost:3000/users/$clientId',
+        options: Options(
+          extra: {'withCredentials': true}, // <-- Important !
+        ),
+      );
       if (response.statusCode == 200) {
         final client = response.data;
         showDialog(
@@ -221,12 +226,20 @@ class _PageDepannageState extends State<PageDepannage> {
   Future<void> _accepterDemande(int demandeId) async {
     try {
       // Récupérer l'id du dépanneur connecté
-      final meResponse = await dio.get('http://localhost:3000/users/me');
+      final meResponse = await dio.get(
+        'http://localhost:3000/users/me',
+        options: Options(
+          extra: {'withCredentials': true}, // <-- Important !
+        ),
+      );
       final depanneurId = meResponse.data['id'];
       final response = await dio.post(
         'http://localhost:3000/demandes/$demandeId/accepter',
         data: {'prestataire_id': depanneurId},
-        options: Options(headers: {'Content-Type': 'application/json'}),
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          extra: {'withCredentials': true}, // <-- Important !
+        ),
       );
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(
@@ -434,112 +447,6 @@ class _PageDepannageState extends State<PageDepannage> {
                 ),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDemande(
-    BuildContext context, {
-    String? avatarUrl,
-    required String nom,
-    required double note,
-    required int nbAvis,
-    required double distance,
-    required String adresse,
-    bool instant = false,
-  }) {
-    return GestureDetector(
-      onTap: () => _showActionSheet(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0xFFF1F1F1))),
-          color: Colors.white,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar
-            CircleAvatar(
-              backgroundColor: Colors.orange,
-              radius: 22,
-              child: avatarUrl == null
-                  ? Text(
-                      nom[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 10),
-            // Infos principales
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '~${distance.toStringAsFixed(1)} km',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (instant)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'À l\'instant',
-                            style: TextStyle(color: Colors.white, fontSize: 11),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    adresse,
-                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.orange, size: 16),
-                      Text(
-                        '$note',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        ' ($nbAvis)',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // Bouton options
-            Icon(Icons.more_vert, color: Colors.grey[600]),
           ],
         ),
       ),

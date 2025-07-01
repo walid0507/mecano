@@ -46,9 +46,7 @@ class _PageMecanoState extends State<PageMecano> {
     try {
       final response = await dio.get(
         'http://localhost:3000/demandes',
-        options: Options(
-          extra: {'withCredentials': true},
-        ),
+        options: Options(extra: {'withCredentials': true}),
       );
       if (response.statusCode == 200) {
         setState(() {
@@ -111,9 +109,7 @@ class _PageMecanoState extends State<PageMecano> {
     try {
       final response = await dio.get(
         'http://localhost:3000/users/$clientId',
-        options: Options(
-          extra: {'withCredentials': true},
-        ),
+        options: Options(extra: {'withCredentials': true}),
       );
       if (response.statusCode == 200) {
         final client = response.data;
@@ -163,32 +159,102 @@ class _PageMecanoState extends State<PageMecano> {
 
   Future<void> _accepterDemande(int demandeId) async {
     try {
-      // Récupérer l'id du dépanneur connecté
       final meResponse = await dio.get(
         'http://localhost:3000/users/me',
-        options: Options(
-          extra: {'withCredentials': true},
-        ),
+        options: Options(extra: {'withCredentials': true}),
       );
-      final depanneurId = meResponse.data['id'];
+      final mecanicienId = meResponse.data['id'];
       final response = await dio.post(
         'http://localhost:3000/demandes/$demandeId/accepter',
-        data: {'prestataire_id': depanneurId},
+        data: {'prestataire_id': mecanicienId},
         options: Options(
           headers: {'Content-Type': 'application/json'},
           extra: {'withCredentials': true},
         ),
       );
       if (response.statusCode == 200) {
+        final prestation = response.data['prestation'];
+        final demande = demandes.firstWhere(
+          (d) => d['id'] == demandeId,
+          orElse: () => null,
+        );
+        if (demande != null) {
+          final clientId = demande['client_id'];
+          final clientResponse = await dio.get(
+            'http://localhost:3000/users/$clientId',
+            options: Options(extra: {'withCredentials': true}),
+          );
+          if (clientResponse.statusCode == 200) {
+            final client = clientResponse.data;
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Prestation en cours'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Nom : ${client['nom']}'),
+                    Text('Prénom : ${client['prenom']}'),
+                    Text('Téléphone : ${client['telephone']}'),
+                    Text(
+                      'Position : (${client['position_lat']}, ${client['position_lng']})',
+                    ),
+                  ],
+                ),
+                actions: [
+                 
+                  ElevatedButton(
+                    onPressed: () async {
+                      await _terminerPrestation(prestation['id']);
+                      Navigator.of(context).pop();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                    ),
+                    child: const Text('Terminer la prestation'),
+                  ),
+                ],
+              ),
+            );
+          }
+        }
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Demande acceptée !')));
-        fetchDemandes(); // Rafraîchir la liste
+        fetchDemandes();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               response.data['error'] ?? 'Erreur lors de l\'acceptation',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+    }
+  }
+
+  Future<void> _terminerPrestation(int prestationId) async {
+    try {
+      final response = await dio.post(
+        'http://localhost:3000/prestations/$prestationId/terminer',
+        options: Options(extra: {'withCredentials': true}),
+      );
+      if (response.statusCode == 200) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Prestation terminée !')));
+        fetchDemandes();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              response.data['error'] ?? 'Erreur lors de la terminaison',
             ),
           ),
         );

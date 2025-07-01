@@ -158,9 +158,7 @@ class _HomePageState extends State<HomePage> {
       // Récupérer l'id du client
       final meResponse = await dio.get(
         'http://localhost:3000/users/me',
-        options: Options(
-          extra: {'withCredentials': true},
-        ),
+        options: Options(extra: {'withCredentials': true}),
       );
 
       final clientId = meResponse.data['id'];

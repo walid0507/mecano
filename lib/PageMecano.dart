@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class PageMecano extends StatefulWidget {
   const PageMecano({super.key});
@@ -14,10 +19,57 @@ class _PageMecanoState extends State<PageMecano> {
   LatLng? _userPosition;
   bool _loading = true;
 
+  final dio = Dio();
+  final cookieJar = CookieJar();
+  List<dynamic> demandes = [];
+  bool _isFetching = false;
+
   @override
   void initState() {
     super.initState();
+    _initCookieJar();
+    fetchDemandes();
     _determinePosition();
+  }
+
+  Future<void> _initCookieJar() async {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      dio.interceptors.add(CookieManager(cookieJar));
+    }
+    // Sur le web, NE PAS ajouter CookieManager !
+  }
+
+  Future<void> fetchDemandes() async {
+    setState(() {
+      _isFetching = true;
+    });
+    try {
+      final response = await dio.get(
+        'http://localhost:3000/demandes',
+        options: Options(
+          extra: {'withCredentials': true},
+        ),
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          demandes = (response.data as List)
+              .where((d) => d['statut'] == 'en_attente')
+              .toList();
+        });
+      } else {
+        setState(() {
+          demandes = [];
+        });
+      }
+    } catch (e) {
+      setState(() {
+        demandes = [];
+      });
+    } finally {
+      setState(() {
+        _isFetching = false;
+      });
+    }
   }
 
   Future<void> _determinePosition() async {
@@ -118,7 +170,7 @@ class _PageMecanoState extends State<PageMecano> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Header amélioré (style client.dart)
+            // Header
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -172,7 +224,7 @@ class _PageMecanoState extends State<PageMecano> {
                 ),
               ),
             ),
-            // Carte OpenStreetMap avec 4 coins arrondis et centrée
+            // Carte OpenStreetMap
             Center(
               child: Container(
                 margin: const EdgeInsets.only(bottom: 0),
@@ -214,48 +266,39 @@ class _PageMecanoState extends State<PageMecano> {
                 ),
               ),
             ),
-            // Liste des courses scrollable sous la map
+            // Liste des demandes dynamiques
             Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  _buildDemande(
-                    context,
-                    avatarUrl: null,
-                    nom: 'Mehdi',
-                    note: 5.0,
-                    nbAvis: 3,
-                    distance: 2.8,
-                    adresse:
-                        'Boulevard Meddad Said (Mahelma)\nMahelma (Zaatria)',
-                    instant: true,
-                  ),
-                  _buildDemande(
-                    context,
-                    avatarUrl: null,
-                    nom: 'rami',
-                    note: 5.0,
-                    nbAvis: 13,
-                    distance: 3.2,
-                    adresse:
-                        'W112 (Mahelma)\nGare المسافرين\nRoutiere du Caroubier, Hussein (Dey)',
-                    instant: true,
-                  ),
-                  _buildDemande(
-                    context,
-                    avatarUrl: null,
-                    nom: 'Adlane',
-                    note: 4.82,
-                    nbAvis: 237,
-                    distance: 3.6,
-                    adresse:
-                        'local n° 20 lot 04 (Rahmania)\nAv. Houari Boumediene (Sidi Abdella)',
-                    instant: true,
-                  ),
-                ],
-              ),
+              child: _isFetching
+                  ? const Center(
+                      child: CircularProgressIndicator(color: Colors.orange),
+                    )
+                  : demandes.isEmpty
+                  ? const Center(child: Text('Aucune demande en attente'))
+                  : ListView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: demandes.length,
+                      itemBuilder: (context, index) {
+                        final demande = demandes[index];
+                        return ListTile(
+                          leading: const Icon(
+                            Icons.assignment,
+                            color: Colors.orange,
+                          ),
+                          title: Text('Demande #${demande['id']}'),
+                          subtitle: Text(
+                            'Client ID: ${demande['client_id']}\nPosition: (${demande['position_lat']}, ${demande['position_lng']})',
+                          ),
+                          trailing: Text(
+                            demande['statut'],
+                            style: const TextStyle(color: Colors.orange),
+                          ),
+                          onTap: () {
+                            _showActionSheet(context);
+                          },
+                        );
+                      },
+                    ),
             ),
-
             // Barre de navigation en bas
             Container(
               padding: const EdgeInsets.symmetric(vertical: 10),
@@ -281,112 +324,20 @@ class _PageMecanoState extends State<PageMecano> {
                 ],
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDemande(
-    BuildContext context, {
-    String? avatarUrl,
-    required String nom,
-    required double note,
-    required int nbAvis,
-    required double distance,
-    required String adresse,
-    bool instant = false,
-  }) {
-    return GestureDetector(
-      onTap: () => _showActionSheet(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: Color(0xFFF1F1F1))),
-          color: Colors.white,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Avatar
-            CircleAvatar(
-              backgroundColor: Colors.orange,
-              radius: 22,
-              child: avatarUrl == null
-                  ? Text(
-                      nom[0].toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    )
-                  : null,
-            ),
-            const SizedBox(width: 10),
-            // Infos principales
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '~${distance.toStringAsFixed(1)} km',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 13,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      if (instant)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            'À l\'instant',
-                            style: TextStyle(color: Colors.white, fontSize: 11),
-                          ),
-                        ),
-                    ],
+            // Bouton de rafraîchissement manuel
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Center(
+                child: ElevatedButton.icon(
+                  onPressed: fetchDemandes,
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Rafraîchir les demandes'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    adresse,
-                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.orange, size: 16),
-                      Text(
-                        '$note',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.orange,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        ' ($nbAvis)',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                ),
               ),
             ),
-            // Bouton options
-            Icon(Icons.more_vert, color: Colors.grey[600]),
           ],
         ),
       ),

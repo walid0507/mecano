@@ -2,6 +2,12 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:dio/dio.dart';
+import 'package:cookie_jar/cookie_jar.dart';
+import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 // Modèle pour un dépanneur
 class Depanneur {
@@ -44,6 +50,24 @@ class _CMecanoState extends State<CMecano> {
   // Position actuelle simulée (Alger)
   final double _currentLat = 36.7538;
   final double _currentLng = 3.0588;
+
+  // Dio et gestion des cookies
+  final dio = Dio();
+  PersistCookieJar? cookieJar;
+
+  @override
+  void initState() {
+    super.initState();
+    _initCookieJar();
+  }
+
+  Future<void> _initCookieJar() async {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      cookieJar = PersistCookieJar();
+      dio.interceptors.add(CookieManager(cookieJar!));
+    }
+    // Sur le web, NE PAS ajouter CookieManager !
+  }
 
   // Liste des dépanneurs proches (données simulées)
   List<Depanneur> depanneurs = [
@@ -105,7 +129,7 @@ class _CMecanoState extends State<CMecano> {
       nom: "Pneu crevé",
       icone: Icons.circle,
       couleur: Colors.blue,
-    ), // Icône corrigée
+    ),
     TypeProbleme(
       nom: "Accident",
       icone: Icons.car_crash,
@@ -136,13 +160,57 @@ class _CMecanoState extends State<CMecano> {
         child: GestureDetector(
           onTap: () => _showDepanneurDetails(depanneur),
           child: Icon(
-            Icons.car_repair, // Icône de véhicule pour dépanneur
+            Icons.car_repair,
             color: depanneur.disponible ? Colors.green : Colors.red,
             size: 36,
           ),
         ),
       );
     }).toList();
+  }
+
+  // Fonction de réservation réelle
+  Future<void> envoyerDemande() async {
+    try {
+      // Récupérer la position GPS du client
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      // Récupérer l'id du client via /users/me
+      final meResponse = await dio.get(
+        'http://localhost:3000/users/me',
+        options: Options(
+          extra: {'withCredentials': true},
+        ),
+      );
+      final clientId = meResponse.data['id'];
+      final response = await dio.post(
+        'http://localhost:3000/demandes',
+        data: {
+          'client_id': clientId,
+          'type_demande': 'mecanicien',
+          'position_lat': position.latitude,
+          'position_lng': position.longitude,
+        },
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          extra: {'withCredentials': true},
+        ),
+      );
+      if (response.statusCode == 201) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Demande envoyée, en cours de traitement…')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'envoi de la demande')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erreur : $e')));
+    }
   }
 
   @override
@@ -235,7 +303,7 @@ class _CMecanoState extends State<CMecano> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Nouvelle carte Google Maps stylée
+                  // Carte
                   Container(
                     height: 250,
                     decoration: BoxDecoration(
@@ -268,22 +336,16 @@ class _CMecanoState extends State<CMecano> {
               ),
             ),
 
-            // Liste des dépanneurs
+            // Bouton de réservation
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 12),
-                  // Remplacement de la liste par un bouton
                   Center(
                     child: ElevatedButton(
-                      onPressed: () {
-                        // Action de réservation à définir
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Réservation effectuée !')),
-                        );
-                      },
+                      onPressed: envoyerDemande,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color.fromARGB(255, 255, 152, 0),
                         foregroundColor: Colors.white,
@@ -306,28 +368,10 @@ class _CMecanoState extends State<CMecano> {
               ),
             ),
 
-            const SizedBox(height: 100), // Espace pour le bouton flottant
+            const SizedBox(height: 100),
           ],
         ),
       ),
-
-      // Enlever le bouton d'assistance rapide
-      // floatingActionButton: SizedBox(
-      //   width: 160,
-      //   height: 60,
-      //   child: FloatingActionButton.extended(
-      //     onPressed: _showAssistanceDialog,
-      //     backgroundColor: Colors.red[600],
-      //     foregroundColor: Colors.white,
-      //     icon: const Icon(Icons.emergency, size: 28, color: Colors.white),
-      //     label: const Text(
-      //       'ASSISTANCE\nRAPIDE',
-      //       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
-      //       textAlign: TextAlign.center,
-      //     ),
-      //   ),
-      // ),
-      // floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -377,139 +421,6 @@ class _CMecanoState extends State<CMecano> {
     );
   }
 
-  void _showAssistanceDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(
-            'Assistance Rapide',
-            style: TextStyle(
-              color: Colors.red[600],
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Sélectionnez le type de problème:',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                height: 300,
-                width: double.maxFinite,
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 10,
-                    mainAxisSpacing: 10,
-                    childAspectRatio: 1.2,
-                  ),
-                  itemCount: typesProblemes.length,
-                  itemBuilder: (context, index) {
-                    TypeProbleme type = typesProblemes[index];
-                    return GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        _envoyerDemandeAssistance(type);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: type.couleur.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: type.couleur),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(type.icone, size: 32, color: type.couleur),
-                            const SizedBox(height: 8),
-                            Text(
-                              type.nom,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: type.couleur,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _envoyerDemandeAssistance(TypeProbleme typeProbleme) {
-    // Simulation d'envoi de la demande d'assistance
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.green),
-              SizedBox(width: 8),
-              Text('Demande envoyée'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Votre demande d\'assistance a été envoyée avec succès!',
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Détails:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              Text('• Type: ${typeProbleme.nom}'),
-              const Text('• Position: Alger Centre'),
-              Text(
-                '• Heure: ${DateTime.now().hour}:${DateTime.now().minute.toString().padLeft(2, '0')}',
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue[50],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Un mécanicien va vous contacter dans les 5 minutes.',
-                  style: TextStyle(color: Colors.blue[800]),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _contactDepanneur(Depanneur depanneur) {
     showDialog(
       context: context,
@@ -525,7 +436,6 @@ class _CMecanoState extends State<CMecano> {
             ElevatedButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                // Ici vous pourriez intégrer un appel téléphonique
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Appel vers ${depanneur.telephone}')),
                 );

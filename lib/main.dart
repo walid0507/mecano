@@ -3,6 +3,7 @@ import 'login.dart';
 import 'welcome.dart';
 import 'PageMecano.dart';
 import 'mecanicien.dart';
+import 'PageDepannage.dart';
 // Import de la nouvelle page PageMecano
 
 void main() {
@@ -36,7 +37,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       // Utiliser WelcomePage comme page d'accueil
-      home: WelcomePage(),
+      home: HomePage(),
     );
   }
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 import 'dart:math';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -131,12 +133,20 @@ class _HomePageState extends State<HomePage> {
   final LatLng _center = LatLng(36.7538, 3.0588);
 
   final dio = Dio();
-  final cookieJar = CookieJar();
+  PersistCookieJar? cookieJar;
 
   @override
   void initState() {
     super.initState();
-    dio.interceptors.add(CookieManager(cookieJar));
+    _initCookieJar();
+  }
+
+  Future<void> _initCookieJar() async {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      cookieJar = PersistCookieJar();
+      dio.interceptors.add(CookieManager(cookieJar!));
+    }
+    // Sur le web, NE PAS ajouter CookieManager !
   }
 
   Future<void> envoyerDemande() async {
@@ -146,7 +156,13 @@ class _HomePageState extends State<HomePage> {
         desiredAccuracy: LocationAccuracy.high,
       );
       // Récupérer l'id du client
-      final meResponse = await dio.get('http://localhost:3000/users/me');
+      final meResponse = await dio.get(
+        'http://localhost:3000/users/me',
+        options: Options(
+          extra: {'withCredentials': true},
+        ),
+      );
+
       final clientId = meResponse.data['id'];
       final response = await dio.post(
         'http://localhost:3000/demandes',
@@ -156,7 +172,10 @@ class _HomePageState extends State<HomePage> {
           'position_lat': position.latitude,
           'position_lng': position.longitude,
         },
-        options: Options(headers: {'Content-Type': 'application/json'}),
+        options: Options(
+          headers: {'Content-Type': 'application/json'},
+          extra: {'withCredentials': true}, // <-- Important !
+        ),
       );
       if (response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(

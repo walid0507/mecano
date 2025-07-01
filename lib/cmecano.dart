@@ -35,12 +35,12 @@ class TypeProbleme {
   TypeProbleme({required this.nom, required this.icone, required this.couleur});
 }
 
-class HomePage extends StatefulWidget {
+class CMecano extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  _CMecanoState createState() => _CMecanoState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _CMecanoState extends State<CMecano> {
   // Position actuelle simulée (Alger)
   final double _currentLat = 36.7538;
   final double _currentLng = 3.0588;
@@ -549,7 +549,7 @@ class MyApp extends StatelessWidget {
         fontFamily: 'Roboto',
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: HomePage(),
+      home: CMecano(),
       debugShowCheckedModeBanner: false,
     );
   }

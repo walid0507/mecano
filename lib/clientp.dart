@@ -145,7 +145,7 @@ class ClientPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => cmecano.HomePage(),
+                        builder: (context) => cmecano.CMecano(),
                       ),
                     );
                   },
@@ -162,7 +162,7 @@ class ClientPage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => cmecano.HomePage(),
+                        builder: (context) => HomePage(),
                       ),
                     );
                   },

@@ -5,6 +5,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:dio/dio.dart';
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio_cookie_manager/dio_cookie_manager.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:io' show Platform;
 
 class PageDepannage extends StatefulWidget {
   const PageDepannage({super.key});
@@ -25,9 +27,16 @@ class _PageDepannageState extends State<PageDepannage> {
   @override
   void initState() {
     super.initState();
-    dio.interceptors.add(CookieManager(cookieJar));
+    _initCookieJar();
     fetchDemandes();
     _determinePosition();
+  }
+
+  Future<void> _initCookieJar() async {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      dio.interceptors.add(CookieManager(cookieJar));
+    }
+    // Sur le web, NE PAS ajouter CookieManager !
   }
 
   Future<void> fetchDemandes() async {
@@ -35,9 +44,13 @@ class _PageDepannageState extends State<PageDepannage> {
       _isFetching = true;
     });
     try {
-      final response = await dio.get('http://localhost:3000/demandes');
+      final response = await dio.get(
+        'http://localhost:3000/demandes',
+        options: Options(
+          extra: {'withCredentials': true}, // <-- Ajoute ceci !
+        ),
+      );
       if (response.statusCode == 200) {
-        // Filtrer les demandes avec statut 'en_attente'
         setState(() {
           demandes = (response.data as List)
               .where((d) => d['statut'] == 'en_attente')

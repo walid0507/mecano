@@ -8,6 +8,7 @@ import 'package:dio_cookie_manager/dio_cookie_manager.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 // Modèle pour un dépanneur
 class Depanneur {
@@ -55,10 +56,15 @@ class _CMecanoState extends State<CMecano> {
   final dio = Dio();
   PersistCookieJar? cookieJar;
 
+  IO.Socket? socket;
+  int? userId; // L'id du client connecté
+  bool demandeAcceptee = false;
+
   @override
   void initState() {
     super.initState();
     _initCookieJar();
+    _initSocket();
   }
 
   Future<void> _initCookieJar() async {
@@ -67,6 +73,50 @@ class _CMecanoState extends State<CMecano> {
       dio.interceptors.add(CookieManager(cookieJar!));
     }
     // Sur le web, NE PAS ajouter CookieManager !
+  }
+
+  @override
+  void dispose() {
+    socket?.dispose();
+    super.dispose();
+  }
+
+  void _initSocket() async {
+    final meResponse = await dio.get(
+      'http://localhost:3000/users/me',
+      options: Options(extra: {'withCredentials': true}),
+    );
+    userId = meResponse.data['id'];
+    print('Mon userId : $userId');
+
+    socket = IO.io(
+      'http://localhost:3000',
+      IO.OptionBuilder()
+        .setTransports(['websocket'])
+        .enableAutoConnect()
+        .build(),
+    );
+
+    socket!.onConnect((_) {
+      print('Connecté au serveur Socket.io');
+      if (userId != null) {
+        socket!.emit('subscribe', userId);
+        print('Subscribed to user_$userId');
+      }
+    });
+
+    socket!.on('demande_acceptee', (data) {
+      print('Demande acceptée reçue : $data');
+      if (!mounted) return; // <-- Ajoute cette ligne !
+      setState(() {
+        demandeAcceptee = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(data['message'] ?? 'Votre demande a été acceptée !')),
+      );
+    });
+
+    socket!.onDisconnect((_) => print('Déconnecté de Socket.io'));
   }
 
   // Liste des dépanneurs proches (données simulées)
@@ -344,25 +394,34 @@ class _CMecanoState extends State<CMecano> {
                 children: [
                   const SizedBox(height: 12),
                   Center(
-                    child: ElevatedButton(
-                      onPressed: envoyerDemande,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color.fromARGB(255, 255, 152, 0),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 40,
-                          vertical: 18,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        textStyle: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      child: const Text('Réserver maintenant'),
-                    ),
+                    child: demandeAcceptee
+                        ? const Text(
+                            'Demande acceptée',
+                            style: TextStyle(
+                              color: Colors.green,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          )
+                        : ElevatedButton(
+                            onPressed: envoyerDemande,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color.fromARGB(255, 255, 152, 0),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 40,
+                                vertical: 18,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              textStyle: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            child: const Text('Réserver maintenant'),
+                          ),
                   ),
                 ],
               ),
